@@ -19,7 +19,7 @@ let make_world clay =
 
   (* Create a 2d world map *)
   let world =
-    Array.init (max_x - min_x + 1) ~f:(fun _ -> Array.create ~len:(max_y - min_y + 1) '.')
+    Array.make_matrix ~dimx:(max_x - min_x + 1) ~dimy:(max_y - min_y + 1) '.'
   in
 
   (* Fill the world *)
@@ -62,7 +62,7 @@ let rec flow world (x,y) =
 (** Count where water has been *)
 let count_drops world =
   Array.fold ~init:0
-    ~f:(fun acc a -> Array.fold a ~init:acc ~f:(fun acc -> function '*' -> acc + 1 | _ -> acc)) world
+    ~f:(fun acc a -> Array.count ~f:(fun x -> x = '*') a + acc) world
 
 let () =
   let (min_x, min_y, world) =
