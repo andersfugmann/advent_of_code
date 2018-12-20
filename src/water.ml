@@ -14,8 +14,8 @@ let make_world clay =
     |> (fun v -> Option.value_exn v)
   in
   (* Add one to either side *)
-  let min_x = min_x - 1 in
-  let max_x = max_x + 1 in
+  let min_x = min_x - 2 in
+  let max_x = max_x + 2 in
 
   (* Create a 2d world map *)
   let world =
@@ -48,16 +48,33 @@ let print_world (min_x, min_y, world) =
     printf "\n"
   done
 
+let rec mark found world (x,y) =
+  match world.(x).(y) with
+  | '*' when found ->
+    world.(x).(y) <- '|';
+    mark found world (x - 1, y);
+    mark found world (x + 1, y);
+  | _ -> ()
+
+
 let rec flow world (x,y) =
-  match world.(x).(y) = '.' with
-  | true ->
+  match world.(x).(y) with
+  | '.' ->
     world.(x).(y) <- '*';
-    y = Array.length world.(0) - 1 || (* At the bottom *)
-    flow world (x, y + 1) || (* Free flow downward *)
-    ( let left  = flow world (x-1, y) in (* Flow left *)
-      let right = flow world (x+1, y) in (* Flow right *)
-      left || right )
-  | false -> false
+    let res =
+      y = Array.length world.(0) - 1 || (* At the bottom *)
+      flow world (x, y + 1) ||
+      (
+        let left  = flow world (x-1, y) in (* Flow left *)
+        let right = flow world (x+1, y) in (* Flow right *)
+        left || right
+      )
+    in
+    mark res world (x,y);
+    res
+  | '*' | '#' -> false
+  | '|' -> true
+  | _ -> failwith "unknown char"
 
 (** Count where water has been *)
 let count_drops world =
