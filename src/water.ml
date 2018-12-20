@@ -1,5 +1,12 @@
 open Core
 
+type elem = Sand | Water | Flow | Clay
+let char_of_elem = function
+  | Sand -> '.'
+  | Clay -> '#'
+  | Water -> '~'
+  | Flow -> '|'
+
 let parse_line l =
   try Scanf.sscanf l "x=%d, y=%d..%d" (fun x y1 y2 -> x,x,y1,y2)
   with | _ -> Scanf.sscanf l "y=%d, x=%d..%d" (fun y x1 x2 -> x1,x2,y,y)
@@ -19,14 +26,14 @@ let make_world clay =
 
   (* Create a 2d world map *)
   let world =
-    Array.make_matrix ~dimx:(max_x - min_x + 1) ~dimy:(max_y - min_y + 1) '.'
+    Array.make_matrix ~dimx:(max_x - min_x + 1) ~dimy:(max_y - min_y + 1) Sand
   in
 
   (* Fill the world *)
   List.iter clay ~f:(fun (x1, x2, y1, y2) ->
       for x = x1 to x2 do
         for y = y1 to y2 do
-          world.(x - min_x).(y - min_y) <- '#'
+          world.(x - min_x).(y - min_y) <- Clay
         done;
       done
     );
@@ -43,15 +50,15 @@ let print_world (min_x, min_y, world) =
 
   for y = 0 to Array.length world.(0) - 1 do
     for x = 0 to Array.length world - 1 do
-      printf "%c" world.(x).(y)
+      printf "%c" (char_of_elem world.(x).(y))
     done;
     printf "\n"
   done
 
 let rec mark found world (x,y) =
   match world.(x).(y) with
-  | '*' when found ->
-    world.(x).(y) <- '|';
+  | Water when found ->
+    world.(x).(y) <- Flow;
     mark found world (x - 1, y);
     mark found world (x + 1, y);
   | _ -> ()
@@ -59,12 +66,11 @@ let rec mark found world (x,y) =
 
 let rec flow world (x,y) =
   match world.(x).(y) with
-  | '.' ->
-    world.(x).(y) <- '*';
+  | Sand ->
+    world.(x).(y) <- Water;
     let res =
-      y = Array.length world.(0) - 1 || (* At the bottom *)
-      flow world (x, y + 1) ||
-      (
+      Array.length world.(0) - 1 = y || (* At the bottom *)
+      flow world (x, y + 1) || (* Flow down *) (
         let left  = flow world (x-1, y) in (* Flow left *)
         let right = flow world (x+1, y) in (* Flow right *)
         left || right
@@ -72,14 +78,13 @@ let rec flow world (x,y) =
     in
     mark res world (x,y);
     res
-  | '*' | '#' -> false
-  | '|' -> true
-  | _ -> failwith "unknown char"
+  | Water | Clay -> false
+  | Flow -> true
 
 (** Count where water has been *)
 let count_drops world =
   Array.fold ~init:0
-    ~f:(fun acc a -> Array.count ~f:(fun x -> x = '*') a + acc) world
+    ~f:(fun acc a -> Array.count ~f:(fun x -> x = Water || x = Flow) a + acc) world
 
 let () =
   let (min_x, min_y, world) =
