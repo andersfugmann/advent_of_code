@@ -70,11 +70,10 @@ let rec flow world (x,y) =
     world.(x).(y) <- Water;
     let res =
       Array.length world.(0) - 1 = y || (* At the bottom *)
-      flow world (x, y + 1) || (* Flow down *) (
-        let left  = flow world (x-1, y) in (* Flow left *)
+      flow world (x, y + 1) || (* Flow down *)
+      ( let left  = flow world (x-1, y) in (* Flow left *)
         let right = flow world (x+1, y) in (* Flow right *)
-        left || right
-      )
+        left || right )
     in
     mark res world (x,y);
     res
